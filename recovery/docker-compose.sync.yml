@@ -1,0 +1,28 @@
+services:
+  mar20_portfolio_label_sync:
+    container_name: mar20_portfolio_label_sync
+    image: cvat/server:${CVAT_VERSION:-v2.72.0}
+    restart: unless-stopped
+    entrypoint:
+      - python3
+      - /opt/mar20/mar20_label_sync.py
+    working_dir: /home/django
+    environment:
+      DJANGO_SETTINGS_MODULE: cvat.settings.production
+      CVAT_POSTGRES_HOST: cvat_db
+      CVAT_REDIS_INMEM_HOST: cvat_redis_inmem
+      CVAT_REDIS_INMEM_PORT: 6379
+      CVAT_REDIS_ONDISK_HOST: cvat_redis_ondisk
+      CVAT_REDIS_ONDISK_PORT: 6666
+      MAR20_TASK_NAME: MAR20_Portfolio_OBB_Review_200
+      MAR20_POLL_SECONDS: "3"
+      MAR20_LABEL_DIR: /dataset/labels
+      MAR20_STATE_FILE: /state/sync_state.json
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ${MAR20_REPO_ROOT}/scripts/mar20_label_sync.py:/opt/mar20/mar20_label_sync.py:ro
+      - ${MAR20_RUNTIME_DIR}/labels:/dataset/labels:rw
+      - ${MAR20_RUNTIME_DIR}/state:/state:rw
+    networks:
+      - cvat

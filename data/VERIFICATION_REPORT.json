@@ -1,0 +1,61 @@
+{
+  "status": "PASS",
+  "verified_date_asia_shanghai": "2026-10-15",
+  "project": {
+    "id": 3,
+    "name": "Remote_Sensing_Annotation_Portfolio"
+  },
+  "task": {
+    "id": 25,
+    "name": "MAR20_Portfolio_OBB_Review_200",
+    "url": "http://localhost:8080/tasks/25",
+    "size": 200,
+    "labels": 20,
+    "instances": 1534,
+    "segment_size": 50,
+    "image_quality": 90,
+    "copy_data": false
+  },
+  "jobs": [
+    {"id": 29, "start": 0, "stop": 49, "stage": "annotation", "state": "new"},
+    {"id": 30, "start": 50, "stop": 99, "stage": "annotation", "state": "new"},
+    {"id": 31, "start": 100, "stop": 149, "stage": "annotation", "state": "new"},
+    {"id": 32, "start": 150, "stop": 199, "stage": "annotation", "state": "new"}
+  ],
+  "docker_storage": {
+    "image_volume": "mar20_portfolio_images",
+    "image_mount_read_only_verified": true,
+    "label_volume": "mar20_portfolio_labels",
+    "label_files": 200,
+    "label_lines": 1534,
+    "metadata_volume": "mar20_portfolio_metadata",
+    "sync_state_volume": "mar20_portfolio_sync_state",
+    "external_volumes": true
+  },
+  "geometry": {
+    "images_compared": 200,
+    "instances_compared": 1534,
+    "maximum_roundtrip_point_error_px": 0.0009900949449395111,
+    "acceptance_threshold_px": 1.0,
+    "visual_qa_images_inspected": 10
+  },
+  "live_sync_reversible_test": {
+    "status": "PASS",
+    "poll_seconds": 3,
+    "shape_id": 663533,
+    "frame": 0,
+    "label_file": "1383.txt",
+    "temporary_resize_px": 0.125,
+    "change_detected_seconds": 3.005,
+    "restore_detected_seconds": 2.753,
+    "cvat_geometry_restored_exactly": true,
+    "original_label_sha256_restored": true
+  },
+  "sha256": {
+    "native_task_backup": "7e42b43f213e4e97333b8e8971d4085533bb80edefa12e3987822bff23c730e6",
+    "cvat_annotations_xml": "3f277a6fce7d39e1fa00815431356aa716026d03a8a0035b45ed9062916c4497",
+    "selection_manifest_csv": "7b39d8a4ebb7006644fb5d179a149a1adedbe8b7a029ed249dc505986d2269d3",
+    "source_and_reproducibility_json": "b39b96d2a7c72421854b35735c3337c4d2108f15852fcafdf284acb12a3483bd",
+    "current_label_set_manifest": "ab95c0369af7cb8bc6f20a50a1eb1154e5afdc78bfd8cd5c72a2a64f11c651e1"
+  }
+}

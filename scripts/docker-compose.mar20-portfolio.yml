@@ -1,0 +1,83 @@
+services:
+  cvat_server:
+    volumes:
+      - mar20_portfolio_images:/home/django/share/mar20_portfolio/images:ro
+
+  cvat_worker_import:
+    volumes:
+      - mar20_portfolio_images:/home/django/share/mar20_portfolio/images:ro
+
+  cvat_worker_export:
+    volumes:
+      - mar20_portfolio_images:/home/django/share/mar20_portfolio/images:ro
+
+  cvat_worker_annotation:
+    volumes:
+      - mar20_portfolio_images:/home/django/share/mar20_portfolio/images:ro
+
+  cvat_worker_chunks:
+    volumes:
+      - mar20_portfolio_images:/home/django/share/mar20_portfolio/images:ro
+
+  mar20_portfolio_data:
+    container_name: mar20_portfolio_data
+    image: cvat/server:v2.72.0
+    restart: unless-stopped
+    entrypoint:
+      - /bin/sh
+      - -c
+      - while true; do sleep 3600; done
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - mar20_portfolio_images:/dataset/images:ro
+      - mar20_portfolio_labels:/dataset/labels:rw
+      - mar20_portfolio_metadata:/dataset/metadata:ro
+    networks:
+      - cvat
+
+  mar20_portfolio_label_sync:
+    container_name: mar20_portfolio_label_sync
+    image: cvat/server:v2.72.0
+    restart: unless-stopped
+    depends_on:
+      cvat_db:
+        condition: service_started
+    entrypoint:
+      - python3
+      - /opt/mar20/mar20_label_sync.py
+    working_dir: /home/django
+    environment:
+      DJANGO_SETTINGS_MODULE: cvat.settings.production
+      CVAT_POSTGRES_HOST: cvat_db
+      CVAT_REDIS_INMEM_HOST: cvat_redis_inmem
+      CVAT_REDIS_INMEM_PORT: 6379
+      CVAT_REDIS_ONDISK_HOST: cvat_redis_ondisk
+      CVAT_REDIS_ONDISK_PORT: 6666
+      MAR20_TASK_NAME: MAR20_Portfolio_OBB_Review_200
+      MAR20_POLL_SECONDS: "3"
+      MAR20_LABEL_DIR: /dataset/labels
+      MAR20_STATE_FILE: /state/sync_state.json
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ./mar20_portfolio/mar20_label_sync.py:/opt/mar20/mar20_label_sync.py:ro
+      - mar20_portfolio_labels:/dataset/labels:rw
+      - mar20_portfolio_sync_state:/state:rw
+    networks:
+      - cvat
+
+volumes:
+  mar20_portfolio_images:
+    external: true
+    name: mar20_portfolio_images
+  mar20_portfolio_labels:
+    external: true
+    name: mar20_portfolio_labels
+  mar20_portfolio_metadata:
+    external: true
+    name: mar20_portfolio_metadata
+  mar20_portfolio_sync_state:
+    external: true
+    name: mar20_portfolio_sync_state

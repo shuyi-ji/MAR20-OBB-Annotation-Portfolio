@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="MAR20 遥感飞机数据集 OBB 标注导入、人工复核与质量验证作品集。">
+  <meta name="theme-color" content="#071114">
+  <title>MAR20 OBB Review · Remote Sensing Annotation Portfolio</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到正文</a>
+
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="返回页面顶部">
+      <span class="brand-mark" aria-hidden="true">▰</span>
+      <span>MAR20 / OBB REVIEW</span>
+    </a>
+    <nav aria-label="主导航">
+      <a href="#overview">项目</a>
+      <a href="#pipeline">流程</a>
+      <a href="#evidence">验证</a>
+      <a href="#gallery">样例</a>
+      <a href="#artifacts">材料</a>
+    </nav>
+    <span class="status-pill"><span></span> VERIFIED BUILD</span>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow">REMOTE SENSING · DATA ANNOTATION · QUALITY ASSURANCE</p>
+        <h1 id="hero-title">MAR20 飞机目标<br><em>旋转框复核系统</em></h1>
+        <p class="hero-lede">从公开数据抽样、官方 OBB 转换到 CVAT 复核与 YOLO-OBB 实时同步。一个可复现、可验证、可恢复的遥感标注工程案例。</p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="#evidence">查看验证证据</a>
+          <a class="button button-ghost" href="data/VERIFICATION_REPORT.json" download>下载验证报告</a>
+        </div>
+        <p class="scope-note"><strong>作品范围：</strong>仅 CVAT Task #25；不包含其他任务、实验室服务器数据或私密凭据。</p>
+      </div>
+
+      <figure class="hero-visual">
+        <img src="assets/overlay-1383.jpg" alt="遥感图像中的多架飞机及彩色旋转框标注">
+        <figcaption>
+          <span>FRAME 000 / 1383.JPG</span>
+          <span>ORIENTED BOX OVERLAY</span>
+        </figcaption>
+        <div class="reticle reticle-a" aria-hidden="true"></div>
+        <div class="reticle reticle-b" aria-hidden="true"></div>
+      </figure>
+
+      <div class="metrics" aria-label="项目关键指标">
+        <div><strong>200</strong><span>精选影像</span></div>
+        <div><strong>20</strong><span>飞机类别</span></div>
+        <div><strong>1,534</strong><span>旋转框实例</span></div>
+        <div><strong>4 × 50</strong><span>CVAT Jobs</span></div>
+      </div>
+    </section>
+
+    <section class="section intro" id="overview">
+      <div class="section-kicker">01 / PROJECT OVERVIEW</div>
+      <div class="intro-grid">
+        <div>
+          <h2>不只是“画框”，而是一条完整的数据生产链路</h2>
+        </div>
+        <div class="prose">
+          <p>本项目从 MAR20 官方训练集确定性抽取 200 张影像，覆盖 A1–A20 全部类别。官方四顶点 OBB 经严格矩形门禁转换为 CVAT 旋转框，导入后进入人工复核、修正与质检流程。</p>
+          <p>这里展示的是<strong>官方标注导入 + 人工复核/修正 + 工程化质检</strong>，不是“200 张全部从零手工标注”。这一区分保证作品描述真实、可审计。</p>
+        </div>
+      </div>
+
+      <div class="facts">
+        <article>
+          <span class="fact-no">A</span>
+          <h3>确定性抽样</h3>
+          <p>固定种子 <code>20260927</code>，多标签缺额均衡分层抽样；清单记录顺序、类别与文件 SHA-256。</p>
+        </article>
+        <article>
+          <span class="fact-no">B</span>
+          <h3>严格几何转换</h3>
+          <p>不把斜框近似成水平框，不静默接受一般四边形；无法无损表示为旋转矩形的样本在创建前剔除。</p>
+        </article>
+        <article>
+          <span class="fact-no">C</span>
+          <h3>存储职责分离</h3>
+          <p>图片卷只读，标签卷可写；同步服务每 3 秒把 CVAT 当前旋转框导出为 YOLO-OBB 文本。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section pipeline-section" id="pipeline">
+      <div class="section-kicker">02 / SYSTEM PIPELINE</div>
+      <div class="section-heading-row">
+        <h2>从公开数据到可恢复标注资产</h2>
+        <p>CVAT 负责交互复核，独立同步器负责可读标签，Docker 命名卷负责持久化边界。</p>
+      </div>
+
+      <div class="pipeline" role="img" aria-label="MAR20 数据进入只读图片卷，再进入 CVAT Task 25，标注由同步器写入 YOLO OBB 标签卷，并经过验证和备份">
+        <div class="node source-node">
+          <span class="node-tag">PUBLIC SOURCE</span>
+          <strong>MAR20 / TRAIN</strong>
+          <small>selection manifest + SHA-256</small>
+        </div>
+        <span class="connector" aria-hidden="true">→</span>
+        <div class="node storage-node">
+          <span class="node-tag">READ ONLY</span>
+          <strong>Image volume</strong>
+          <small>200 selected frames</small>
+        </div>
+        <span class="connector" aria-hidden="true">→</span>
+        <div class="node cvat-node">
+          <span class="node-tag">REVIEW UI</span>
+          <strong>CVAT Task #25</strong>
+          <small>4 jobs · rotated boxes</small>
+        </div>
+        <span class="connector" aria-hidden="true">→</span>
+        <div class="node sync-node">
+          <span class="node-tag">3 S POLL</span>
+          <strong>Label sync</strong>
+          <small>API → YOLO-OBB</small>
+        </div>
+        <span class="connector" aria-hidden="true">→</span>
+        <div class="node output-node">
+          <span class="node-tag">READ / WRITE</span>
+          <strong>Label volume</strong>
+          <small>200 text files</small>
+        </div>
+      </div>
+
+      <div class="implementation-grid">
+        <div class="code-card">
+          <div class="code-card-head"><span>存储契约</span><span>DOCKER VOLUMES</span></div>
+          <pre><code>mar20_portfolio_images      # CVAT read-only
+mar20_portfolio_labels      # synchronizer write
+mar20_portfolio_metadata    # evidence / manifests
+mar20_portfolio_sync_state  # last known task state</code></pre>
+        </div>
+        <div class="principles">
+          <div><span>01</span><p><strong>可复现</strong> — 固定抽样种子与完整清单。</p></div>
+          <div><span>02</span><p><strong>可追溯</strong> — 数据、转换、验证均有机器可读证据。</p></div>
+          <div><span>03</span><p><strong>可恢复</strong> — 原生任务备份与运行环境解耦保存。</p></div>
+          <div><span>04</span><p><strong>最小暴露</strong> — 公共仓库只含示例与复现材料。</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section evidence-section" id="evidence">
+      <div class="section-kicker">03 / VERIFICATION EVIDENCE</div>
+      <div class="section-heading-row">
+        <h2>结论必须能被复查</h2>
+        <p>创建前门禁、运行时核对、全量几何比较与可逆同步测试全部通过。</p>
+      </div>
+
+      <div class="evidence-layout">
+        <div class="verification-panel">
+          <div class="pass-seal"><span>PASS</span><small>2026-10-15</small></div>
+          <dl>
+            <div><dt>帧读取</dt><dd>200 / 200</dd></div>
+            <div><dt>框数一致</dt><dd>1,534 / 1,534</dd></div>
+            <div><dt>最大几何误差</dt><dd>0.000990 px</dd></div>
+            <div><dt>验收阈值</dt><dd>≤ 1 px</dd></div>
+            <div><dt>实时同步</dt><dd>3.005 s</dd></div>
+            <div><dt>可逆恢复</dt><dd>2.753 s</dd></div>
+          </dl>
+        </div>
+
+        <div class="checklist">
+          <article><span>✓</span><div><h3>全量读取</h3><p>200 张原始影像均可从 CVAT 读取。</p></div></article>
+          <article><span>✓</span><div><h3>权限隔离</h3><p>服务端对图片挂载的写入测试被系统拒绝。</p></div></article>
+          <article><span>✓</span><div><h3>几何闭环</h3><p>官方四点 → 旋转框 → 四点，1,534 个实例逐一匹配。</p></div></article>
+          <article><span>✓</span><div><h3>真实同步</h3><p>0.125 px 临时编辑写入标签；随后恢复，CVAT 几何和标签哈希均回到原值。</p></div></article>
+        </div>
+      </div>
+
+      <div class="distribution-block">
+        <div class="distribution-copy">
+          <h3>20 类覆盖</h3>
+          <p>条形长度表示本次 200 张样本中的实例数。抽样以图像为单位且允许一图多类，因此各类图像数之和可以大于 200。</p>
+          <p class="chart-total"><span id="chart-total">1,534</span> total instances</p>
+        </div>
+        <div id="class-chart" class="class-chart" aria-label="MAR20 20 类实例分布图">
+          <p class="chart-loading">正在读取类别分布…</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section gallery-section" id="gallery">
+      <div class="section-kicker">04 / VISUAL QA</div>
+      <div class="section-heading-row">
+        <h2>方向、类别与边界的视觉抽查</h2>
+        <p>以下均为 Task #25 的真实验证叠加图；仅公开少量样例，不公开完整影像集。</p>
+      </div>
+
+      <div class="gallery-grid">
+        <figure class="gallery-wide"><img src="assets/overlay-2120.jpg" alt="多架飞机的旋转框标注样例 2120" loading="lazy"><figcaption><span>2120.JPG</span><span>MULTI-INSTANCE</span></figcaption></figure>
+        <figure><img src="assets/overlay-2265.jpg" alt="飞机旋转框标注样例 2265" loading="lazy"><figcaption><span>2265.JPG</span><span>OBB CHECK</span></figcaption></figure>
+        <figure><img src="assets/overlay-1619.jpg" alt="飞机旋转框标注样例 1619" loading="lazy"><figcaption><span>1619.JPG</span><span>CLASS CHECK</span></figcaption></figure>
+        <figure><img src="assets/overlay-2558.jpg" alt="飞机旋转框标注样例 2558" loading="lazy"><figcaption><span>2558.JPG</span><span>ANGLE CHECK</span></figcaption></figure>
+        <figure><img src="assets/overlay-705.jpg" alt="飞机旋转框标注样例 705" loading="lazy"><figcaption><span>705.JPG</span><span>BOUNDARY CHECK</span></figcaption></figure>
+      </div>
+
+      <details class="qa-sheet">
+        <summary>展开 10 张视觉质检总览</summary>
+        <img src="assets/qa-sheet.jpg" alt="10 张 MAR20 旋转框视觉质检图拼接总览" loading="lazy">
+      </details>
+    </section>
+
+    <section class="section artifacts-section" id="artifacts">
+      <div class="section-kicker">05 / REPRODUCIBLE ARTIFACTS</div>
+      <div class="section-heading-row">
+        <h2>公开可审计，也能重建交互环境</h2>
+        <p>清单、统计与核心脚本进入 Git；完整 Task #25 备份作为校验锁定的 Release 资产保存，账号、Token 和本地路径永不上传。</p>
+      </div>
+
+      <div class="artifact-list">
+        <a href="data/selection_manifest.csv" download><span>CSV</span><div><strong>Selection manifest</strong><small>200 张确定性抽样清单与 SHA-256</small></div><b>↓</b></a>
+        <a href="data/class_distribution.csv" download><span>CSV</span><div><strong>Class distribution</strong><small>A1–A20 图像数与实例数</small></div><b>↓</b></a>
+        <a href="data/VERIFICATION_REPORT.json" download><span>JSON</span><div><strong>Verification report</strong><small>任务、存储、几何与同步验证</small></div><b>↓</b></a>
+        <a href="data/geometry_verification.json" download><span>JSON</span><div><strong>Geometry verification</strong><small>全量旋转框重建误差</small></div><b>↓</b></a>
+        <a href="data/source_and_reproducibility.json" download><span>JSON</span><div><strong>Source & reproducibility</strong><small>数据出处、许可、抽样参数</small></div><b>↓</b></a>
+        <a href="scripts/prepare_mar20.py" download><span>CODE</span><div><strong>Pipeline entry script</strong><small>数据准备入口；其余同步与验证脚本同仓库提供</small></div><b>↓</b></a>
+        <a href="https://github.com/shuyi-ji/MAR20-OBB-Annotation-Portfolio/releases/tag/task25-recovery-v1" target="_blank" rel="noreferrer"><span>CVAT</span><div><strong>Interactive recovery bundle</strong><small>200 图、完整标注、固定版本环境与 SHA-256 验证</small></div><b>↗</b></a>
+        <a href="https://github.com/shuyi-ji/MAR20-OBB-Annotation-Portfolio/releases/tag/task25-checkpoint-latest" target="_blank" rel="noreferrer"><span>LIVE</span><div><strong>Latest annotation checkpoint</strong><small>当前 Task 备份、200 个 YOLO-OBB 标签与哈希清单</small></div><b>↗</b></a>
+      </div>
+
+      <aside class="runtime-note">
+        <div>
+          <span class="runtime-icon">◌</span>
+          <div><strong>展示常在线，标注环境可重建</strong><p>GitHub Pages 是无需 Docker 的展示层；交互式 CVAT 不常驻公网，但可从 Release 下载原生备份，并用锁定的 <code>v2.72.0</code> 环境恢复到 <code>localhost:8080</code>，继续修改和实时写回标签。</p></div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="section attribution" id="license">
+      <div class="section-kicker">06 / DATA ETHICS & ATTRIBUTION</div>
+      <div class="attribution-grid">
+        <h2>公开展示也要尊重数据许可</h2>
+        <div>
+          <p>MAR20 作者页面说明数据集包含 3,842 张图像、20 类和 22,341 个实例，采用 <strong>CC BY-NC 4.0</strong>。本项目用于非商业实习/求职展示。</p>
+          <p><strong>引用：</strong>Wenqi Yu, Gong Cheng, Meijun Wang, Yanqing Yao, Xingxing Xie, Xiwen Yao, and Junwei Han. “MAR20: A Benchmark for Military Aircraft Recognition in Remote Sensing Images.” <em>Journal of Remote Sensing (Chinese)</em>, 2022.</p>
+          <a class="text-link" href="https://gcheng-nwpu.github.io/#Datasets" target="_blank" rel="noreferrer">访问 MAR20 官方页面 ↗</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div><strong>MAR20 OBB REVIEW</strong><span>Remote Sensing Annotation Portfolio</span></div>
+    <div><span>Built with CVAT · Docker · Python</span><span>Task #25 only</span></div>
+  </footer>
+</body>
+</html>

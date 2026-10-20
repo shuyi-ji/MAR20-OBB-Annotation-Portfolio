@@ -1,0 +1,177 @@
+name: CVAT recovery smoke test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  restore-task-25:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out portfolio
+        uses: actions/checkout@v4
+
+      - name: Download and verify native backup
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p .runtime/artifacts .runtime/reports .runtime/labels .runtime/state
+          backup_path="$(bash recovery/download-preferred-backup.sh .runtime/artifacts)"
+          echo "TASK_BACKUP_PATH=$backup_path" >> "$GITHUB_ENV"
+
+      - name: Fetch pinned CVAT source
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          source recovery/versions.env
+          git init .runtime/cvat
+          git -C .runtime/cvat remote add origin https://github.com/cvat-ai/cvat.git
+          git -C .runtime/cvat fetch --depth 1 origin "$CVAT_COMMIT"
+          git -C .runtime/cvat checkout --detach FETCH_HEAD
+          test "$(git -C .runtime/cvat rev-parse HEAD)" = "$CVAT_COMMIT"
+
+      - name: Start minimal CVAT services
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          source recovery/versions.env
+          cd .runtime/cvat
+          CVAT_VERSION="$CVAT_VERSION" CVAT_HOST=localhost docker compose up -d \
+            traefik cvat_server cvat_ui cvat_worker_import cvat_worker_export \
+            cvat_worker_annotation cvat_worker_chunks
+          for _ in $(seq 1 90); do
+            if docker exec cvat_server python3 manage.py health_check >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 5
+          done
+          exit 1
+
+      - name: Create short-lived CVAT administrator
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          password="$(openssl rand -hex 24)"
+          echo "::add-mask::$password"
+          docker exec \
+            -e DJANGO_SUPERUSER_USERNAME=ci_admin \
+            -e DJANGO_SUPERUSER_EMAIL=ci@example.invalid \
+            -e DJANGO_SUPERUSER_PASSWORD="$password" \
+            cvat_server python3 manage.py createsuperuser --noinput
+          echo "CVAT_PASSWORD=$password" >> "$GITHUB_ENV"
+
+      - name: Build recovery verifier client
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          source recovery/versions.env
+          docker build \
+            --file recovery/Dockerfile.recovery-client \
+            --tag "mar20-recovery-client:$CVAT_VERSION" \
+            recovery
+
+      - name: Import and verify Task 25
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          source recovery/versions.env
+          network="$(docker inspect --format '{{range $name, $_ := .NetworkSettings.Networks}}{{println $name}}{{end}}' cvat_server | head -n 1)"
+          test -n "$network"
+          docker run --rm \
+            --network "$network" \
+            --env CVAT_USERNAME=ci_admin \
+            --env CVAT_PASSWORD \
+            --env CVAT_HOST=http://cvat_server:8080 \
+            --volume "$TASK_BACKUP_PATH:/recovery/task.zip:ro" \
+            --volume "$GITHUB_WORKSPACE/recovery/import_and_verify.py:/recovery/import_and_verify.py:ro" \
+            --volume "$GITHUB_WORKSPACE/.runtime/reports:/reports:rw" \
+            --entrypoint python3 \
+            "mar20-recovery-client:$CVAT_VERSION" \
+            /recovery/import_and_verify.py \
+            --backup /recovery/task.zip \
+            --report /reports/restore_report.json
+
+      - name: Verify live YOLO-OBB synchronization
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          source recovery/versions.env
+          export CVAT_VERSION
+          export MAR20_REPO_ROOT="$GITHUB_WORKSPACE"
+          export MAR20_RUNTIME_DIR="$GITHUB_WORKSPACE/.runtime"
+          docker run --rm --user 0:0 \
+            --volume "$MAR20_RUNTIME_DIR/labels:/dataset/labels" \
+            --volume "$MAR20_RUNTIME_DIR/state:/state" \
+            --entrypoint sh \
+            "cvat/server:$CVAT_VERSION" \
+            -c 'chown -R 1000:1000 /dataset/labels /state && chmod -R u+rwX,go+rX /dataset/labels /state'
+          cd .runtime/cvat
+          docker compose \
+            -f docker-compose.yml \
+            -f "$GITHUB_WORKSPACE/recovery/docker-compose.sync.yml" \
+            up -d --no-deps mar20_portfolio_label_sync
+          count=0
+          for _ in $(seq 1 40); do
+            count="$(find "$GITHUB_WORKSPACE/.runtime/labels" -maxdepth 1 -type f -name '*.txt' | wc -l)"
+            if [[ "$count" -eq 200 ]]; then
+              break
+            fi
+            sleep 3
+          done
+          test "$count" -eq 200
+
+      - name: Export and verify current checkpoint
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          source recovery/versions.env
+          mkdir -p .runtime/snapshots/latest
+          network="$(docker inspect --format '{{range $name, $_ := .NetworkSettings.Networks}}{{println $name}}{{end}}' cvat_server | head -n 1)"
+          test -n "$network"
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            --network "$network" \
+            --env CVAT_USERNAME=ci_admin \
+            --env CVAT_PASSWORD \
+            --env CVAT_HOST=http://cvat_server:8080 \
+            --volume "$GITHUB_WORKSPACE/recovery/export_snapshot.py:/recovery/export_snapshot.py:ro" \
+            --volume "$GITHUB_WORKSPACE/.runtime/snapshots/latest:/snapshot:rw" \
+            --volume "$GITHUB_WORKSPACE/.runtime/labels:/labels:ro" \
+            --entrypoint python3 \
+            "mar20-recovery-client:$CVAT_VERSION" \
+            /recovery/export_snapshot.py \
+            --output-dir /snapshot \
+            --labels-dir /labels
+          python3 recovery/verify_backup.py \
+            .runtime/snapshots/latest/task_25_MAR20_Portfolio_OBB_Review_200-latest.zip \
+            --manifest .runtime/snapshots/latest/snapshot_manifest.json
+
+      - name: Upload restore certificate
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: task25-restore-certificate
+          path: .runtime/reports/restore_report.json
+          if-no-files-found: warn
+
+      - name: Upload reproducible checkpoint
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: task25-current-checkpoint
+          path: .runtime/snapshots/latest/
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Diagnostic logs on failure
+        if: failure()
+        shell: bash
+        run: |
+          docker ps -a
+          docker logs --tail 200 cvat_server || true
+          docker logs --tail 200 cvat_worker_import || true
+          docker logs --tail 200 mar20_portfolio_label_sync || true

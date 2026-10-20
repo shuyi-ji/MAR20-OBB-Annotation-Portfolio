@@ -1,0 +1,33 @@
+# Secrets and local runtime configuration
+.env
+.env.*
+*.pem
+*.key
+*token*
+*secret*
+
+# Private/raw project assets
+backups/
+backup/
+raw/
+images/
+volumes/
+docker-data/
+*.zip
+*.tar
+*.tar.gz
+
+# Local tooling
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.runtime/
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Preview outputs
+preview-*.png
+site-audit.json

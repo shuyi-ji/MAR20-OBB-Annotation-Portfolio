@@ -1,0 +1,53 @@
+{
+  "dataset": "MAR20",
+  "official_page": "https://gcheng-nwpu.github.io/#Datasets",
+  "official_download": {
+    "baidu": "https://pan.baidu.com/s/1VpQGGoSVTdFCtROVnH4s3A?pwd=wye2",
+    "onedrive": "https://1drv.ms/u/s!AmgKYzARBl5ceGUKiVsRzfxZa_4?e=K21Spg"
+  },
+  "license": "CC BY-NC 4.0 (official author page; non-commercial portfolio use)",
+  "citation": "Wenqi Yu, Gong Cheng, Meijun Wang, Yanqing Yao, Xingxing Xie, Xiwen Yao, Junwei Han. MAR20: A Benchmark for Military Aircraft Recognition in Remote Sensing Images. Journal of Remote Sensing (Chinese), 2022.",
+  "official_counts": {
+    "images": 3842,
+    "classes": 20,
+    "instances": 22341,
+    "train_images": 1331,
+    "test_images": 2511,
+    "out_of_bounds_images_excluded_from_sampling": 422,
+    "out_of_bounds_instances_excluded_from_sampling": 546,
+    "non_rectangular_images_excluded_from_sampling": 3088,
+    "non_rectangular_instances_excluded_from_sampling": 15009,
+    "non_orthogonal_images_excluded_from_sampling": 3089,
+    "non_orthogonal_instances_excluded_from_sampling": 15211
+  },
+  "transfer_mirrors": {
+    "images": {
+      "page": "https://www.kaggle.com/datasets/jsxyhelu2019/mar20-1220",
+      "kaggle_dataset_id": 2748524,
+      "version": 1,
+      "archive_size": 1203804831,
+      "members": 3842,
+      "transfer": "HTTP Range: central directory plus selected members only"
+    },
+    "obb_labels": {
+      "page": "https://www.kaggle.com/datasets/jsxyhelu2019/labels-mar20-obb",
+      "kaggle_dataset_id": 5985528,
+      "version": 1,
+      "archive_size": 1214185,
+      "archive_sha256": "dca88f63506da5ccd8a07575fef7d684ebfaca64df9c33d7c368f94cda35f8c1",
+      "members": 3842,
+      "instances": 22341
+    }
+  },
+  "selection": {
+    "seed": 20260927,
+    "split": "train",
+    "images": 200,
+    "instances": 1534,
+    "minimum_images_per_class": 5,
+    "eligible_in_bounds_train_images": 277,
+    "algorithm": "deterministic multi-label deficit-balanced stratified sampling"
+  },
+  "maximum_obb_reconstruction_error_px": 0.0009882115089878145,
+  "created_at_unix": 1790859145.7968214
+}
